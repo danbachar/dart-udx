@@ -43,6 +43,11 @@ class UDXMultiplexer {
   /// Used to validate incoming stateless reset packets.
   final Map<ConnectionId, StatelessResetToken> _resetTokens = {};
 
+  /// Callback for raw (non-UDX) packets received on this socket.
+  /// Fired when a datagram doesn't parse as a valid UDX packet.
+  /// The application can use this to receive raw UDP data alongside UDX traffic.
+  void Function(Uint8List data, InternetAddress address, int port)? onRawPacket;
+
   /// Starts listening for incoming datagrams and routes them.
   void _listen() {
     socket.listen((event) {
@@ -52,7 +57,10 @@ class UDXMultiplexer {
 
         final data = datagram.data;
         // New packet format minimum: version(4) + dcidLen(1) + scidLen(1) + seq(4) + destId(4) + srcId(4) = 18 bytes
-        if (data.length < 18) return; // Not a valid UDX packet
+        if (data.length < 18) {
+          onRawPacket?.call(data, datagram.address, datagram.port);
+          return;
+        }
 
         // Check if this might be a stateless reset packet
         if (data.length >= StatelessResetPacket.minPacketSize) {
@@ -82,11 +90,13 @@ class UDXMultiplexer {
         try {
           final dcidLength = data[4]; // Byte at offset 4 is destination CID length
           if (dcidLength > 20 || data.length < 5 + dcidLength) {
-            return; // Invalid packet
+            onRawPacket?.call(data, datagram.address, datagram.port);
+            return;
           }
           destinationCid = ConnectionId(data.sublist(5, 5 + dcidLength));
         } catch (e) {
-          return; // Failed to parse CID, ignore packet
+          onRawPacket?.call(data, datagram.address, datagram.port);
+          return;
         }
 
         // Route the packet to the correct socket
@@ -243,17 +253,22 @@ class UDXMultiplexer {
   void handleIncomingDatagramForTest(
       Uint8List data, InternetAddress address, int port) {
     // This is a simplified version of the logic in _listen for test purposes
-    if (data.length < 18) return; // New minimum packet size
+    if (data.length < 18) {
+      onRawPacket?.call(data, address, port);
+      return; // New minimum packet size
+    }
 
     // Extract destination CID from new packet format
     ConnectionId destinationCid;
     try {
       final dcidLength = data[4]; // Byte at offset 4 is destination CID length
       if (dcidLength > 20 || data.length < 5 + dcidLength) {
+        onRawPacket?.call(data, address, port);
         return; // Invalid packet
       }
       destinationCid = ConnectionId(data.sublist(5, 5 + dcidLength));
     } catch (e) {
+      onRawPacket?.call(data, address, port);
       return; // Failed to parse CID, ignore packet
     }
 
