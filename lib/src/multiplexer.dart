@@ -24,7 +24,7 @@ class UDXMultiplexer {
 
   /// The underlying UDP socket that this multiplexer listens on.
   final RawDatagramSocket socket;
-  
+
   /// Optional metrics observer to be passed to all created sockets
   final UdxMetricsObserver? metricsObserver;
 
@@ -38,7 +38,7 @@ class UDXMultiplexer {
   final Map<ConnectionId, UDPSocket> socketsByCid = {};
   @visibleForTesting
   final Map<String, UDPSocket> socketsByPeer = {};
-  
+
   /// A map of stateless reset tokens for known connections.
   /// Used to validate incoming stateless reset packets.
   final Map<ConnectionId, StatelessResetToken> _resetTokens = {};
@@ -88,7 +88,8 @@ class UDXMultiplexer {
         // New format: version(4) + dcidLen(1) + dcid(0-20) + ...
         ConnectionId destinationCid;
         try {
-          final dcidLength = data[4]; // Byte at offset 4 is destination CID length
+          final dcidLength =
+              data[4]; // Byte at offset 4 is destination CID length
           if (dcidLength > 20 || data.length < 5 + dcidLength) {
             onRawPacket?.call(data, datagram.address, datagram.port);
             return;
@@ -101,17 +102,18 @@ class UDXMultiplexer {
 
         // Route the packet to the correct socket
         final socketConnection = socketsByCid[destinationCid];
-        
+
         if (socketConnection != null) {
           // print('[MUX] Forwarding packet to existing UDPSocket');
-          socketConnection.handleIncomingDatagram(datagram.data, datagram.address, datagram.port);
+          socketConnection.handleIncomingDatagram(
+              datagram.data, datagram.address, datagram.port);
         } else {
           try {
             final packet = UDXPacket.fromBytes(data);
             final isNewConnection = packet.frames
                 .whereType<StreamFrame>()
                 .any((frame) => frame.isSyn);
-            
+
             if (isNewConnection) {
               // print('[MUX] SYN packet detected. Creating new UDPSocket.');
               // This is a new connection attempt.
@@ -128,7 +130,8 @@ class UDXMultiplexer {
               // to handle retransmissions during the handshake.
               socketsByCid[destinationCid] = newSocket;
               _connectionsController.add(newSocket);
-              newSocket.handleIncomingDatagram(datagram.data, datagram.address, datagram.port);
+              newSocket.handleIncomingDatagram(
+                  datagram.data, datagram.address, datagram.port);
             }
           } catch (e) {
             // Not a valid UDX packet, ignore.
@@ -151,8 +154,28 @@ class UDXMultiplexer {
   }
 
   /// Sends a datagram to the specified address and port.
-  void send(Uint8List data, InternetAddress address, int port) {
-    socket.send(data, address, port);
+  ///
+  /// Returns a [SocketException] when the send fails so callers can surface it
+  /// as a transport error without triggering an uncaught async exception.
+  SocketException? send(Uint8List data, InternetAddress address, int port) {
+    try {
+      final sent = socket.send(data, address, port);
+      if (sent <= 0) {
+        return SocketException(
+          'UDX send wrote 0 bytes to ${address.address}:$port',
+          address: address,
+          port: port,
+        );
+      }
+      return null;
+    } on SocketException catch (e) {
+      return SocketException(
+        'UDX send failed to ${address.address}:$port: ${e.message}',
+        osError: e.osError,
+        address: e.address ?? address,
+        port: e.port ?? port,
+      );
+    }
   }
 
   /// Removes a socket from the multiplexer's management.
@@ -213,7 +236,7 @@ class UDXMultiplexer {
   }
 
   /// Sends a stateless reset packet to a peer.
-  /// 
+  ///
   /// This is used when the server has lost connection state but receives
   /// a packet for a connection. The stateless reset allows the client to
   /// quickly detect that the server has lost state and close the connection.
@@ -231,7 +254,7 @@ class UDXMultiplexer {
         token = StatelessResetToken.generate(connectionId);
         _resetTokens[connectionId] = token;
       }
-      
+
       // Create and send stateless reset packet
       final resetPacket = StatelessResetPacket.create(token);
       socket.send(resetPacket.toBytes(), address, port);
@@ -240,7 +263,7 @@ class UDXMultiplexer {
       // (e.g., server secret not configured)
     }
   }
-  
+
   /// Registers a reset token for a connection.
   /// This allows the multiplexer to validate incoming stateless resets.
   void registerResetToken(ConnectionId cid, StatelessResetToken token) {

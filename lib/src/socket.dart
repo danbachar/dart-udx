@@ -17,7 +17,7 @@ import 'version.dart';
 
 /// Custom error for when a stream creation attempt exceeds the peer's advertised limit.
 class StreamLimitExceededError extends StateError {
-  StreamLimitExceededError(String message) : super(message);
+  StreamLimitExceededError(super.message);
 }
 
 /// Represents a single UDX connection, managed by a [UDXMultiplexer].
@@ -60,15 +60,18 @@ class UDPSocket with UDXEventEmitter {
   // --- Path Migration Properties ---
   /// Data for an in-flight path challenge.
   Uint8List? _pathChallengeData;
+
   /// The potential new address being validated.
   InternetAddress? _pendingRemoteAddress;
   int? _pendingRemotePort;
+
   /// Timer for path validation timeout.
   Timer? _pathChallengeTimer;
 
   // --- PMTUD Properties ---
   /// A controller for Path MTU Discovery for this connection.
   late final PathMtuDiscoveryController _pmtudController;
+
   /// Tracks in-flight MTU probes by their sequence number.
   final Map<int, Timer> _inFlightMtuProbes = {}; // seq -> timeoutTimer
   /// Connection-level packet manager (per-connection sequencing, per QUIC RFC 9000).
@@ -105,7 +108,8 @@ class UDPSocket with UDXEventEmitter {
   late int _localConnectionMaxData; // Our connection receive window
   late int _remoteConnectionMaxData; // Peer's connection receive window
   int _connectionBytesSent = 0; // Total data bytes sent on this connection
-  int _connectionBytesReceived = 0; // Total data bytes received on this connection
+  int _connectionBytesReceived =
+      0; // Total data bytes received on this connection
 
   // Stream concurrency properties
   late int _localMaxStreams; // Our advertised stream limit
@@ -113,10 +117,13 @@ class UDPSocket with UDXEventEmitter {
   int _activeOutgoingStreams = 0; // Count of our active streams to the peer
 
   // Anti-amplification properties (RFC 9000 Section 8.1)
-  bool _addressValidated = false; // Whether the peer's address has been validated
-  int _bytesReceivedBeforeValidation = 0; // Bytes received before address validation
+  bool _addressValidated =
+      false; // Whether the peer's address has been validated
+  int _bytesReceivedBeforeValidation =
+      0; // Bytes received before address validation
   int _bytesSentBeforeValidation = 0; // Bytes sent before address validation
-  final List<Uint8List> _pendingPackets = []; // Packets queued due to amplification limit
+  final List<Uint8List> _pendingPackets =
+      []; // Packets queued due to amplification limit
   static const int amplificationFactor = 3; // RFC 9000: 3x amplification limit
 
   /// Whether the socket is closing.
@@ -191,11 +198,11 @@ class UDPSocket with UDXEventEmitter {
     _congestionController.onFastRetransmit = (sequence) {
       _packetManager.retransmitPacket(sequence);
     };
-    
+
     // For client-initiated connections, address is validated by default
     // For server-side connections (receiving SYN), address must be validated
     _addressValidated = !isServer;
-    
+
     // Notify observer that handshake is starting
     _handshakeStartTime = DateTime.now();
     metricsObserver?.onHandshakeStart(
@@ -206,7 +213,8 @@ class UDPSocket with UDXEventEmitter {
   }
 
   /// Processes an incoming datagram from the multiplexer.
-  Future<void> handleIncomingDatagram(Uint8List data, InternetAddress fromAddress, int fromPort) async {
+  Future<void> handleIncomingDatagram(
+      Uint8List data, InternetAddress fromAddress, int fromPort) async {
     // Track received bytes for anti-amplification
     if (!_addressValidated) {
       _bytesReceivedBeforeValidation += data.length;
@@ -216,10 +224,10 @@ class UDPSocket with UDXEventEmitter {
         _onAddressValidated();
       }
     }
-    
+
     try {
       final packet = UDXPacket.fromBytes(data);
-      
+
       // Check if version is supported
       if (!UdxVersion.isSupported(packet.version) && !_handshakeCompleted) {
         // Send VERSION_NEGOTIATION packet
@@ -229,10 +237,13 @@ class UDPSocket with UDXEventEmitter {
           supportedVersions: UdxVersion.supportedVersions,
         );
         multiplexer.send(versionNegPacket.toBytes(), fromAddress, fromPort);
-        emit('versionNegotiation', {'clientVersion': packet.version, 'supportedVersions': UdxVersion.supportedVersions});
+        emit('versionNegotiation', {
+          'clientVersion': packet.version,
+          'supportedVersions': UdxVersion.supportedVersions
+        });
         return;
       }
-      
+
       // Always update the remote CID from the packet's source CID.
       // This ensures that even during retransmissions or path migrations,
       // we are targeting the correct peer identifier.
@@ -244,13 +255,14 @@ class UDPSocket with UDXEventEmitter {
         if (!_handshakeCompleter.isCompleted) {
           _handshakeCompleter.complete();
         }
-        
+
         // Notify observer of successful handshake
         if (_handshakeStartTime != null) {
           final duration = DateTime.now().difference(_handshakeStartTime!);
-          metricsObserver?.onHandshakeComplete(cids.localCid, duration, true, null);
+          metricsObserver?.onHandshakeComplete(
+              cids.localCid, duration, true, null);
         }
-        
+
         emit('connect');
       }
     } catch (e) {
@@ -262,7 +274,8 @@ class UDPSocket with UDXEventEmitter {
       final udxPacket = UDXPacket.fromBytes(data);
 
       // --- Path Migration Logic ---
-      final pathHasChanged = remoteAddress.address != fromAddress.address || remotePort != fromPort;
+      final pathHasChanged = remoteAddress.address != fromAddress.address ||
+          remotePort != fromPort;
       if (pathHasChanged && _pathChallengeData == null) {
         _initiatePathValidation(fromAddress, fromPort);
       }
@@ -326,8 +339,10 @@ class UDPSocket with UDXEventEmitter {
 
       // --- Connection-level receive ordering ---
       bool needsAck = false;
-      bool containsAckElicitingFrames = udxPacket.frames.any((f) => f is StreamFrame || f is PingFrame);
-      bool hasStreamData = udxPacket.frames.any((f) => f is StreamFrame && (f.data.isNotEmpty || f.isFin || f.isSyn));
+      bool containsAckElicitingFrames =
+          udxPacket.frames.any((f) => f is StreamFrame || f is PingFrame);
+      bool hasStreamData = udxPacket.frames.any(
+          (f) => f is StreamFrame && (f.data.isNotEmpty || f.isFin || f.isSyn));
 
       // Control-only packets (ACKs, window updates) are processed immediately
       // without advancing _nextExpectedSeq. They don't carry ordered stream
@@ -377,7 +392,8 @@ class UDPSocket with UDXEventEmitter {
   }
 
   /// Processes the frames of a packet that is in sequence order.
-  void _processPacketFrames(UDXPacket packet, InternetAddress fromAddress, int fromPort) {
+  void _processPacketFrames(
+      UDXPacket packet, InternetAddress fromAddress, int fromPort) {
     final targetStreamId = packet.destinationStreamId;
     final remoteStreamId = packet.sourceStreamId;
 
@@ -391,10 +407,13 @@ class UDPSocket with UDXEventEmitter {
 
         if (stream == null && frame.isSyn && remoteStreamId != 0) {
           // Incoming stream via SYN
-          final currentIncomingStreams = _registeredStreams.values.where((s) => !s.isInitiator).length;
+          final currentIncomingStreams =
+              _registeredStreams.values.where((s) => !s.isInitiator).length;
           if (currentIncomingStreams >= _localMaxStreams) {
             // Reject
-            sendStreamPacket(remoteStreamId, targetStreamId, [ResetStreamFrame(errorCode: 2)], trackForRetransmit: false);
+            sendStreamPacket(remoteStreamId, targetStreamId,
+                [ResetStreamFrame(errorCode: 2)],
+                trackForRetransmit: false);
             return;
           }
 
@@ -433,7 +452,8 @@ class UDPSocket with UDXEventEmitter {
   }
 
   /// Processes the connection-level receive buffer for sequential packets.
-  void _processConnectionReceiveBuffer(InternetAddress fromAddress, int fromPort) {
+  void _processConnectionReceiveBuffer(
+      InternetAddress fromAddress, int fromPort) {
     while (_connectionReceiveBuffer.containsKey(_nextExpectedSeq)) {
       final bufferedPacket = _connectionReceiveBuffer.remove(_nextExpectedSeq)!;
       _receivedPacketSequences.add(bufferedPacket.sequence);
@@ -450,11 +470,13 @@ class UDPSocket with UDXEventEmitter {
     _everAckedSequencesByRemote.addAll(newlySackedSequences);
 
     // Compute true cumulative ack
-    while (_everAckedSequencesByRemote.contains(_currentHighestCumulativeAckFromRemote + 1)) {
+    while (_everAckedSequencesByRemote
+        .contains(_currentHighestCumulativeAckFromRemote + 1)) {
       _currentHighestCumulativeAckFromRemote++;
     }
 
-    bool advancesCcCumulativePoint = _currentHighestCumulativeAckFromRemote > _ccMirrorOfHighestProcessedCumulativeAck;
+    bool advancesCcCumulativePoint = _currentHighestCumulativeAckFromRemote >
+        _ccMirrorOfHighestProcessedCumulativeAck;
     final int largestAckedInThisFrame = frame.largestAcked;
 
     if (newlySackedSequences.isNotEmpty) {
@@ -482,9 +504,11 @@ class UDPSocket with UDXEventEmitter {
     }
 
     if (advancesCcCumulativePoint) {
-      _ccMirrorOfHighestProcessedCumulativeAck = _currentHighestCumulativeAckFromRemote;
+      _ccMirrorOfHighestProcessedCumulativeAck =
+          _currentHighestCumulativeAckFromRemote;
     } else {
-      _congestionController.processDuplicateAck(_ccMirrorOfHighestProcessedCumulativeAck);
+      _congestionController
+          .processDuplicateAck(_ccMirrorOfHighestProcessedCumulativeAck);
     }
   }
 
@@ -498,7 +522,8 @@ class UDPSocket with UDXEventEmitter {
   /// Uses connection-level sequence numbers (per QUIC RFC 9000).
   /// If [trackForRetransmit] is true, the packet is registered with the PacketManager
   /// for retransmission and congestion control.
-  void sendStreamPacket(int dstStreamId, int srcStreamId, List<Frame> frames, {bool trackForRetransmit = true}) {
+  void sendStreamPacket(int dstStreamId, int srcStreamId, List<Frame> frames,
+      {bool trackForRetransmit = true}) {
     if (_closing) return;
 
     // Determine if this packet carries stream data (data, SYN, or FIN).
@@ -536,7 +561,8 @@ class UDPSocket with UDXEventEmitter {
 
     if (dataSize > 0) {
       incrementConnectionBytesSent(dataSize);
-      _congestionController.pacingController.onPacketSent(packet.toBytes().length);
+      _congestionController.pacingController
+          .onPacketSent(packet.toBytes().length);
     }
   }
 
@@ -549,7 +575,9 @@ class UDPSocket with UDXEventEmitter {
 
     int ackDelayMs = 0;
     if (_largestAckedPacketArrivalTime != null) {
-      ackDelayMs = DateTime.now().difference(_largestAckedPacketArrivalTime!).inMilliseconds;
+      ackDelayMs = DateTime.now()
+          .difference(_largestAckedPacketArrivalTime!)
+          .inMilliseconds;
       ackDelayMs = ackDelayMs.clamp(0, 65535);
     }
 
@@ -561,7 +589,8 @@ class UDPSocket with UDXEventEmitter {
     if (sortedSequences.isNotEmpty) {
       int blockStart = sortedSequences[0];
       for (int i = 0; i < sortedSequences.length; i++) {
-        if (i + 1 < sortedSequences.length && sortedSequences[i + 1] == sortedSequences[i] + 1) {
+        if (i + 1 < sortedSequences.length &&
+            sortedSequences[i + 1] == sortedSequences[i] + 1) {
           // Continue current block
         } else {
           blocks.add({'start': blockStart, 'end': sortedSequences[i]});
@@ -622,7 +651,7 @@ class UDPSocket with UDXEventEmitter {
   /// Enforces anti-amplification limits per RFC 9000 Section 8.1.
   void send(Uint8List data) {
     if (_closing) throw StateError('Socket is closing');
-    
+
     // Anti-amplification check: don't send more than 3x what we've received
     // until the address is validated
     if (!_addressValidated) {
@@ -634,21 +663,35 @@ class UDPSocket with UDXEventEmitter {
       }
       _bytesSentBeforeValidation += data.length;
     }
-    
-    multiplexer.send(data, remoteAddress, remotePort);
+
+    final error = multiplexer.send(data, remoteAddress, remotePort);
+    if (error != null) {
+      emit('error', {
+        'error': error,
+        'message': 'Failed to send UDP datagram',
+        'stackTrace': StackTrace.current.toString(),
+      });
+    }
   }
 
   /// Called when the peer's address has been validated.
   /// Flushes any packets that were queued due to amplification limits.
   void _onAddressValidated() {
     if (_addressValidated) return;
-    
+
     _addressValidated = true;
     emit('addressValidated');
-    
+
     // Flush all pending packets
     for (final packet in _pendingPackets) {
-      multiplexer.send(packet, remoteAddress, remotePort);
+      final error = multiplexer.send(packet, remoteAddress, remotePort);
+      if (error != null) {
+        emit('error', {
+          'error': error,
+          'message': 'Failed to flush pending UDP datagram',
+          'stackTrace': StackTrace.current.toString(),
+        });
+      }
     }
     _pendingPackets.clear();
   }
@@ -683,7 +726,8 @@ class UDPSocket with UDXEventEmitter {
 
   /// Closes the connection with an error code and reason.
   /// Sends a CONNECTION_CLOSE frame to the peer before terminating.
-  Future<void> closeWithError(int errorCode, String reason, {int frameType = 0}) async {
+  Future<void> closeWithError(int errorCode, String reason,
+      {int frameType = 0}) async {
     if (_closing) return;
     _closing = true;
 
@@ -702,7 +746,7 @@ class UDPSocket with UDXEventEmitter {
         sequence: 0,
         frames: [closeFrame],
       );
-      
+
       try {
         send(closePacket.toBytes());
         // Small delay to ensure CONNECTION_CLOSE is sent
@@ -736,6 +780,7 @@ class UDPSocket with UDXEventEmitter {
   }
 
   /// Closes the connection.
+  @override
   Future<void> close() async {
     if (_closing) return;
     _closing = true;
@@ -782,9 +827,10 @@ class UDPSocket with UDXEventEmitter {
       // Potentially throw an error or close the old stream
     }
     _registeredStreams[stream.id] = stream;
-    
+
     // Notify observer of stream creation
-    metricsObserver?.onStreamCreated(cids.localCid, stream.id, stream.isInitiator);
+    metricsObserver?.onStreamCreated(
+        cids.localCid, stream.id, stream.isInitiator);
   }
 
   /// Unregisters a UDXStream from this socket.
@@ -792,17 +838,17 @@ class UDPSocket with UDXEventEmitter {
     final stream = _registeredStreams[streamId];
     if (stream != null) {
       // Notify observer of stream closure (we'll get duration and bytes from the stream)
-      final duration = stream.connectedAt != null 
-          ? DateTime.now().difference(stream.connectedAt!) 
+      final duration = stream.connectedAt != null
+          ? DateTime.now().difference(stream.connectedAt!)
           : Duration.zero;
       metricsObserver?.onStreamClosed(
-        cids.localCid, 
-        streamId, 
+        cids.localCid,
+        streamId,
         duration,
         stream.bytesRead,
         stream.bytesWritten,
       );
-      
+
       _registeredStreams.remove(streamId);
       if (stream.isInitiator) {
         _activeOutgoingStreams = (_activeOutgoingStreams - 1).clamp(0, 9999);
@@ -889,14 +935,15 @@ class UDPSocket with UDXEventEmitter {
     _pathChallengeTimer = Timer(const Duration(seconds: 5), () {
       // Notify observer of failed path migration
       metricsObserver?.onPathMigrationComplete(cids.localCid, false);
-      
+
       _pathChallengeData = null;
       _pendingRemoteAddress = null;
       _pendingRemotePort = null;
     });
   }
 
-  void _handlePathChallenge(PathChallengeFrame frame, InternetAddress fromAddress, int fromPort) {
+  void _handlePathChallenge(
+      PathChallengeFrame frame, InternetAddress fromAddress, int fromPort) {
     // Emit an event so tests can observe that a challenge was received.
     emit('pathChallengeReceived', frame);
 
@@ -914,7 +961,8 @@ class UDPSocket with UDXEventEmitter {
     multiplexer.send(packet.toBytes(), fromAddress, fromPort);
   }
 
-  void _handlePathResponse(PathResponseFrame frame, InternetAddress fromAddress, int fromPort) {
+  void _handlePathResponse(
+      PathResponseFrame frame, InternetAddress fromAddress, int fromPort) {
     // Check if the response is valid.
     if (_pathChallengeData == null ||
         _pendingRemoteAddress?.address != fromAddress.address ||
@@ -950,27 +998,27 @@ class UDPSocket with UDXEventEmitter {
 
   /// Send a PING frame and wait for ACK to verify connection liveness.
   /// Returns true if ACK received within timeout, false otherwise.
-  /// 
+  ///
   /// This is a lightweight, non-intrusive way to check if the connection
   /// is still alive. The PING frame is just 1 byte and elicits an ACK response.
   Future<bool> ping({Duration timeout = const Duration(seconds: 5)}) async {
     if (_closing || closing) return false;
-    
+
     // Send a packet containing just a PING frame
     final pingSequence = _packetManager.nextSequence;
     final packet = UDXPacket(
       destinationCid: cids.remoteCid,
       sourceCid: cids.localCid,
       destinationStreamId: 0, // Connection-level packet
-      sourceStreamId: 0,       // Connection-level packet
+      sourceStreamId: 0, // Connection-level packet
       sequence: pingSequence,
       frames: [PingFrame()],
     );
-    
+
     final completer = Completer<bool>();
     Timer? timeoutTimer;
     StreamSubscription? ackSubscription;
-    
+
     // Listen for ACK of our ping packet
     ackSubscription = on('ack').listen((event) {
       // Check if this ACK acknowledges our ping packet
@@ -989,7 +1037,7 @@ class UDPSocket with UDXEventEmitter {
         }
       }
     });
-    
+
     // Set up timeout
     timeoutTimer = Timer(timeout, () {
       if (!completer.isCompleted) {
@@ -997,7 +1045,7 @@ class UDPSocket with UDXEventEmitter {
         completer.complete(false);
       }
     });
-    
+
     // Send the ping packet
     try {
       send(packet.toBytes());
@@ -1008,7 +1056,7 @@ class UDPSocket with UDXEventEmitter {
         completer.complete(false);
       }
     }
-    
+
     return completer.future;
   }
 
@@ -1021,7 +1069,7 @@ class UDPSocket with UDXEventEmitter {
 
     final (probePacket, sequence) = _pmtudController.buildProbePacket(
         cids.remoteCid, cids.localCid, 0, 0, _packetManager.nextSequence);
-    
+
     send(probePacket.toBytes());
 
     final timer = Timer(const Duration(seconds: 3), () {
@@ -1097,7 +1145,8 @@ class UDPSocket with UDXEventEmitter {
 
     if (frame.maxData > _remoteConnectionMaxData) {
       _remoteConnectionMaxData = frame.maxData;
-      emit('remoteConnectionWindowUpdate', {'maxData': _remoteConnectionMaxData});
+      emit('remoteConnectionWindowUpdate',
+          {'maxData': _remoteConnectionMaxData});
     }
   }
 
@@ -1116,7 +1165,11 @@ class UDPSocket with UDXEventEmitter {
     try {
       send(packet.toBytes());
     } catch (e, s) {
-      emit('error', {'error': e, 'message': 'Failed to send MaxDataFrame', 'stackTrace': s.toString()});
+      emit('error', {
+        'error': e,
+        'message': 'Failed to send MaxDataFrame',
+        'stackTrace': s.toString()
+      });
     }
   }
 
@@ -1151,8 +1204,8 @@ class UDPSocket with UDXEventEmitter {
 
   void _checkAndSendLocalMaxDataUpdate() {
     if (_connectionBytesReceived > _localConnectionMaxData * 0.25) {
-       advertiseConnectionWindowUpdate();
-       _connectionBytesReceived = 0;
+      advertiseConnectionWindowUpdate();
+      _connectionBytesReceived = 0;
     }
   }
 }

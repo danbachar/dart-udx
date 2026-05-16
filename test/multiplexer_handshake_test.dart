@@ -56,14 +56,10 @@ void main() {
     test('createSocket should be idempotent for the same peer', () {
       final udx = UDX();
       // 1. Call multiplexer.createSocket for a specific peer (host/port).
-      final socket1 = multiplexer.createSocket(
-        udx, '127.0.0.1', 12345
-      );
+      final socket1 = multiplexer.createSocket(udx, '127.0.0.1', 12345);
 
       // 2. Call it a second time for the exact same peer.
-      final socket2 = multiplexer.createSocket(
-        udx, '127.0.0.1', 12345
-      );
+      final socket2 = multiplexer.createSocket(udx, '127.0.0.1', 12345);
 
       // 3. Assert that the two returned socket instances are the same.
       expect(identical(socket1, socket2), isTrue);
@@ -72,12 +68,15 @@ void main() {
       expect(multiplexer.getSocketsForTest().length, 1);
     });
 
-    test('server-side socket should be created with the client-specified destination CID', () async {
+    test(
+        'server-side socket should be created with the client-specified destination CID',
+        () async {
       final remoteAddress = InternetAddress.loopbackIPv4;
       const remotePort = 54321;
 
       final clientCid = ConnectionId.random();
-      final serverCid = ConnectionId.random(); // This is the CID the client wants the server to use.
+      final serverCid = ConnectionId
+          .random(); // This is the CID the client wants the server to use.
 
       final synPacket = UDXPacket(
         destinationCid: serverCid, // Client sends to this specific CID
@@ -99,5 +98,6 @@ void main() {
       multiplexer.handleIncomingDatagramForTest(
           synBytes, remoteAddress, remotePort);
     });
+
   });
 }
