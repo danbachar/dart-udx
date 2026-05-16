@@ -8,3 +8,6 @@ pubspec.lock
 
 .iml
 .idea
+
+# Claude Flow session/intelligence data
+.claude-flow/
