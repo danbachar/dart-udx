@@ -1,10 +1,4 @@
-import 'dart:async';
-import 'dart:typed_data';
-import 'package:collection/collection.dart';
-
-import 'socket.dart';
 import 'stream.dart';
-import 'events.dart';
 
 /// The main UDX class that provides reliable, multiplexed, and congestion-controlled
 /// streams over UDP.

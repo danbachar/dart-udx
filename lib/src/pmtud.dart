@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'cid.dart';
 import 'packet.dart';
 

@@ -103,7 +103,7 @@ class UDXStream with UDXEventEmitter implements StreamSink<Uint8List> {
 
   /// The maximum transmission unit (MTU)
   int get mtu => _mtu;
-  int _mtu = 1400;
+  final int _mtu = 1400;
 
   int get _maxPayloadSize => _mtu - 16;
 
@@ -185,9 +185,9 @@ class UDXStream with UDXEventEmitter implements StreamSink<Uint8List> {
 
     _socket = socket;
     this.remoteId = remoteId;
-    this.remoteHost = host;
-    this.remotePort = port;
-    this.remoteFamily = UDX.getAddressFamily(host);
+    remoteHost = host;
+    remotePort = port;
+    remoteFamily = UDX.getAddressFamily(host);
     _connected = true;
     connectedAt = DateTime.now();
 
@@ -361,7 +361,7 @@ class UDXStream with UDXEventEmitter implements StreamSink<Uint8List> {
     try {
       await completer.future;
     } finally {
-      timeoutTimer?.cancel();
+      timeoutTimer.cancel();
     }
 
     // Wait for pacer
@@ -528,12 +528,12 @@ class UDXStream with UDXEventEmitter implements StreamSink<Uint8List> {
   }
 
   Stream<Uint8List> get data => _dataController.stream;
-  Stream<void> get end => on('end').map((_) => null);
-  Stream<void> get drain => on('drain').map((_) => null);
+  Stream<void> get end => on('end').map((_) {});
+  Stream<void> get drain => on('drain').map((_) {});
   Stream<int> get ack => on('ack').map((event) => event.data as int);
   Stream<Uint8List> get send => on('send').map((event) => event.data as Uint8List);
   Stream<Uint8List> get message => on('message').map((event) => event.data as Uint8List);
-  Stream<void> get closeEvents => on('close').map((_) => null);
+  Stream<void> get closeEvents => on('close').map((_) {});
 
   static Future<UDXStream> createOutgoing(
     UDX udx,

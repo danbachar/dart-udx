@@ -5,7 +5,6 @@ import 'cid.dart';
 import 'packet.dart';
 import 'pacing.dart';
 import 'metrics_observer.dart';
-import 'logging.dart';
 
 /// Implements QUIC-style congestion control for UDX streams, based on RFC 9002.
 class CongestionController {
@@ -77,9 +76,6 @@ class CongestionController {
 
   /// Stores the 'largest_acked' value from the ACK frame that triggered the current dupAck count.
   int _lastAckedForDupCount = -1;
-
-  /// Tracks the highest 'largest_acked' value received from a non-duplicate ACK frame.
-  int _highestProcessedCumulativeAck = -1;
 
   /// Flag indicating if the controller is in a fast recovery phase.
   bool get isInRecoveryForTest => _inRecovery;
@@ -159,24 +155,12 @@ class CongestionController {
     _inflight -= bytes;
     if (_inflight < 0) _inflight = 0;
 
-    bool cwndChanged = false;
-    int oldCwnd = _cwnd;
-    bool ssthreshChanged = false;
-    int oldSsthresh = _ssthresh;
-    bool dupAcksChanged = false;
-    int oldDupAcks = _dupAcks;
-    bool inRecoveryChanged = false;
-    bool oldInRecovery = _inRecovery;
-
-
     if (isNewCumulativeAck) {
       // RTT should only be updated when the cumulative ACK point advances.
       _updateRtt(sentTime, ackDelay);
 
-      _highestProcessedCumulativeAck = currentFrameLargestAcked;
       if (_dupAcks != 0) {
         _dupAcks = 0; // Reset dupAcks as cumulative ACK advanced.
-        dupAcksChanged = true;
       }
       _lastAckedForDupCount = -1; // Reset since it's a new cumulative ack
 
@@ -184,21 +168,17 @@ class CongestionController {
         // Exit recovery if the acknowledged packet was sent after the recovery period started.
         if (currentFrameLargestAcked > _recoveryEndPacketNumber) {
           _inRecovery = false;
-          inRecoveryChanged = true;
-          // //print('[CC] Exiting recovery. CWND remains at ssthresh: $_cwnd');
         }
       }
-      
+
       if (!_inRecovery) {
         // Congestion control algorithm
         if (_cwnd < _ssthresh) {
           // Slow start
           _cwnd += bytes;
-          cwndChanged = true;
         } else {
           // CUBIC Congestion avoidance
           _cubicUpdate(bytes);
-          cwndChanged = true;
         }
       }
     } else {
@@ -378,25 +358,16 @@ class CongestionController {
     }
   }
 
-  /// Called by UDXStream when an ACK frame is received that does not advance the _highestProcessedCumulativeAck.
+  /// Called by UDXStream when an ACK frame is received that does not advance
+  /// the cumulative-ack point.
   /// [frameLargestAcked] is the 'largest_acked' value from this duplicate ACK frame.
   void processDuplicateAck(int frameLargestAcked) {
-    // DIAGNOSTIC LOGGING START
-    // //print('[CC processDuplicateAck] INPUT: frameLargestAcked=$frameLargestAcked');
-    // //print('[CC processDuplicateAck] PRE-STATE: _lastAckedForDupCount=$_lastAckedForDupCount, _dupAcks=$_dupAcks, _inRecovery=$_inRecovery, _lostPacketInRecovery=$_lostPacketInRecovery');
-    // DIAGNOSTIC LOGGING END
-    
-    int oldDupAcks = _dupAcks;
-    bool dupAcksIncremented = false;
-
     if (frameLargestAcked == _lastAckedForDupCount) {
       _dupAcks++;
-      dupAcksIncremented = true;
     } else {
       // This is the first time we've seen 'frameLargestAcked' as the duplicate frontier.
       _dupAcks = 1;
       _lastAckedForDupCount = frameLargestAcked;
-      dupAcksIncremented = true; // Technically it was set to 1, but it's a change.
     }
     // //print('[CC] processDuplicateAck: frameLargestAcked=$frameLargestAcked, _lastAckedForDupCount=$_lastAckedForDupCount, _dupAcks=$_dupAcks, _inRecovery=$_inRecovery');
 
@@ -440,13 +411,7 @@ class CongestionController {
           _inRecovery = true;
           _recoveryEndPacketNumber = packetManager.lastSentPacketNumber;
 
-          int oldSsthresh = _ssthresh;
           _ssthresh = max(_cwnd ~/ 2, minCwnd); // ssthresh is half of cwnd, min 2*MSS
-          // DIAGNOSTIC LOGGING START
-          // //print('[CC processDuplicateAck] Ssthresh updated: old=$oldSsthresh, new=$_ssthresh');
-          // DIAGNOSTIC LOGGING END
-          
-          int oldCwnd = _cwnd;
           _cwnd = _ssthresh; // Enter congestion avoidance phase of recovery
           pacingController.updateRate(_cwnd, _minRtt);
           // DIAGNOSTIC LOGGING START

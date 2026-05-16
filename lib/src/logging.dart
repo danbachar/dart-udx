@@ -1,12 +1,12 @@
-/// Logging infrastructure for dart-udx
-/// 
-/// Provides a configurable logging system to replace direct print statements.
-/// Applications can set a custom logger and control verbosity.
+// Logging infrastructure for UDX.
+//
+// Provides a configurable logging system to replace direct print statements.
+// Applications can set a custom logger and control verbosity.
 
 /// Type definition for a logger function
 typedef UdxLogger = void Function(String level, String message);
 
-/// Centralized logging for dart-udx
+/// Centralized logging for UDX
 class UdxLogging {
   /// The logger function to use. If null, logging is disabled.
   static UdxLogger? logger;

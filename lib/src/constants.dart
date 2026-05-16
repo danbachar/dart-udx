@@ -1,7 +1,7 @@
-/// Constants and configuration values for dart-udx
-/// 
-/// This file centralizes magic numbers and configuration parameters
-/// used throughout the UDX implementation.
+// Constants and configuration values for the UDX implementation.
+//
+// This file centralizes magic numbers and configuration parameters used
+// throughout the package.
 
 // =============================================================================
 // Transport Parameters

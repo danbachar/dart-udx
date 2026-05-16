@@ -1,6 +1,6 @@
-/// Multiplexer-level echo client for Go↔Dart interop testing.
-/// Usage: dart run bin/mux_echo_client.dart <port>
-/// Creates a UDX connection to Go's Multiplexer, sends data, reads echo, exits 0 on success.
+// Multiplexer-level echo client for Go↔Dart interop testing.
+// Usage: dart run bin/mux_echo_client.dart <port>
+// Creates a UDX connection to Go's Multiplexer, sends data, reads echo, exits 0 on success.
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
