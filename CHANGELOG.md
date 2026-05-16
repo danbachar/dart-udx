@@ -1,9 +1,44 @@
 # Changelog
 
-All notable changes to dart-udx will be documented in this file.
+All notable changes to this package will be documented in this file.
+
+This package is a fork of [`dart_udx`](https://pub.dev/packages/dart_udx) by
+Stephan M. February, published separately as `grassroots_dart_udx`. Versions
+prior to 2.1.0 below describe the upstream package and are reproduced for
+context — the version numbers in the upstream changelog refer to `dart_udx`
+releases, not `grassroots_dart_udx`.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [2.1.0] - 2026-05-16 — first `grassroots_dart_udx` release
+
+Forked from upstream `dart_udx` 2.0.3 (commit `3f88edb` on
+[github.com/danbachar/dart-udx](https://github.com/danbachar/dart-udx)).
+
+### Added
+- `UDXMultiplexer.onRawPacket` — callback invoked for datagrams that are not
+  valid UDX packets, instead of silently dropping them. Lets a single UDP
+  socket carry UDX traffic and an application-defined wire format (e.g.
+  signaling, hole-punch coordination) side by side.
+
+### Changed
+- `UDXMultiplexer.send` now returns `SocketException?` instead of `void`.
+  Callers can observe and propagate per-datagram send failures (e.g.
+  unreachable host) as explicit transport errors rather than relying on
+  uncaught async error handlers. `UDPSocket` emits an `error` event when the
+  underlying send fails.
+
+### Notes
+- Package renamed to `grassroots_dart_udx`. The Dart library import path is
+  now `package:grassroots_dart_udx/grassroots_dart_udx.dart`.
+- Public API surface otherwise matches upstream 2.0.3. Migrating from
+  upstream `dart_udx` is a search-and-replace of the package name plus
+  optional handling of `multiplexer.send`'s new return value.
+
+---
+
+# Upstream `dart_udx` changelog (for context)
 
 ## [2.0.3] - 2026-02-22
 

@@ -1,4 +1,4 @@
-library udx;
+library grassroots_dart_udx;
 
 export 'src/udx.dart';
 export 'src/socket.dart';

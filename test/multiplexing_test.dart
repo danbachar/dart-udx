@@ -1,8 +1,8 @@
-import 'package:dart_udx/src/cid.dart';
-import 'package:dart_udx/src/multiplexer.dart';
-import 'package:dart_udx/dart_udx.dart';
-import 'package:dart_udx/src/socket.dart';
-import 'package:dart_udx/src/stream.dart';
+import 'package:grassroots_dart_udx/src/cid.dart';
+import 'package:grassroots_dart_udx/src/multiplexer.dart';
+import 'package:grassroots_dart_udx/grassroots_dart_udx.dart';
+import 'package:grassroots_dart_udx/src/socket.dart';
+import 'package:grassroots_dart_udx/src/stream.dart';
 import 'package:test/test.dart';
 import 'dart:async';
 import 'dart:io';

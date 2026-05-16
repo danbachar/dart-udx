@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:test/test.dart';
-import 'package:dart_udx/dart_udx.dart';
-import 'package:dart_udx/src/multiplexer.dart';
-import 'package:dart_udx/src/socket.dart';
-import 'package:dart_udx/src/stream.dart';
+import 'package:grassroots_dart_udx/grassroots_dart_udx.dart';
+import 'package:grassroots_dart_udx/src/multiplexer.dart';
+import 'package:grassroots_dart_udx/src/socket.dart';
+import 'package:grassroots_dart_udx/src/stream.dart';
 
 void main() {
   group('UDXStream Half-Close', () {

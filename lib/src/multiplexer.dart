@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:dart_udx/src/cid.dart';
-import 'package:dart_udx/src/packet.dart';
-import 'package:dart_udx/src/socket.dart';
+import 'package:grassroots_dart_udx/src/cid.dart';
+import 'package:grassroots_dart_udx/src/packet.dart';
+import 'package:grassroots_dart_udx/src/socket.dart';
 import 'package:meta/meta.dart';
 
 import 'udx.dart';

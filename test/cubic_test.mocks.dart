@@ -5,9 +5,9 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
 
-import 'package:dart_udx/src/cid.dart' as _i4;
-import 'package:dart_udx/src/congestion.dart' as _i2;
-import 'package:dart_udx/src/packet.dart' as _i3;
+import 'package:grassroots_dart_udx/src/cid.dart' as _i4;
+import 'package:grassroots_dart_udx/src/congestion.dart' as _i2;
+import 'package:grassroots_dart_udx/src/packet.dart' as _i3;
 import 'package:mockito/mockito.dart' as _i1;
 
 // ignore_for_file: type=lint

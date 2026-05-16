@@ -1,4 +1,4 @@
-import 'package:dart_udx/src/events.dart';
+import 'package:grassroots_dart_udx/src/events.dart';
 import 'package:test/test.dart';
 import 'dart:async';
 

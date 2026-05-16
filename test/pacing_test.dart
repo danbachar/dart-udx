@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_udx/src/pacing.dart';
+import 'package:grassroots_dart_udx/src/pacing.dart';
 
 void main() {
   group('PacingController', () {

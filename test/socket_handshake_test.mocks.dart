@@ -7,11 +7,11 @@ import 'dart:async' as _i6;
 import 'dart:io' as _i2;
 import 'dart:typed_data' as _i7;
 
-import 'package:dart_udx/src/cid.dart' as _i5;
-import 'package:dart_udx/src/multiplexer.dart' as _i4;
-import 'package:dart_udx/src/packet.dart' as _i9;
-import 'package:dart_udx/src/socket.dart' as _i3;
-import 'package:dart_udx/src/udx.dart' as _i8;
+import 'package:grassroots_dart_udx/src/cid.dart' as _i5;
+import 'package:grassroots_dart_udx/src/multiplexer.dart' as _i4;
+import 'package:grassroots_dart_udx/src/packet.dart' as _i9;
+import 'package:grassroots_dart_udx/src/socket.dart' as _i3;
+import 'package:grassroots_dart_udx/src/udx.dart' as _i8;
 import 'package:mockito/mockito.dart' as _i1;
 
 // ignore_for_file: type=lint

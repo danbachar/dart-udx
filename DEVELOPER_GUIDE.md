@@ -646,7 +646,7 @@ await socket.sendMaxStreamsFrame();
 ```dart
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:dart_udx/udx.dart';
+import 'package:grassroots_dart_udx/grassroots_dart_udx.dart';
 
 class FileTransferServer {
   late UDXMultiplexer multiplexer;

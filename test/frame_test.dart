@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 import 'package:test/test.dart';
-import 'package:dart_udx/src/cid.dart';
-import 'package:dart_udx/src/packet.dart';
+import 'package:grassroots_dart_udx/src/cid.dart';
+import 'package:grassroots_dart_udx/src/packet.dart';
 
 void main() {
   group('UDX Frame Serialization/Deserialization', () {

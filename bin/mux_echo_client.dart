@@ -5,7 +5,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:dart_udx/dart_udx.dart';
+import 'package:grassroots_dart_udx/grassroots_dart_udx.dart';
 
 Future<void> main(List<String> arguments) async {
   if (arguments.isEmpty) {

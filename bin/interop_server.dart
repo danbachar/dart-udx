@@ -4,7 +4,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:dart_udx/src/packet.dart';
+import 'package:grassroots_dart_udx/src/packet.dart';
 
 void main() async {
   final socket = await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);

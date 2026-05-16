@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 import 'package:test/test.dart';
-import 'package:dart_udx/src/cid.dart';
+import 'package:grassroots_dart_udx/src/cid.dart';
 
 void main() {
   group('ConnectionId', () {

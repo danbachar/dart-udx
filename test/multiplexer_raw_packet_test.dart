@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:dart_udx/src/cid.dart';
-import 'package:dart_udx/src/packet.dart';
-import 'package:dart_udx/dart_udx.dart';
+import 'package:grassroots_dart_udx/src/cid.dart';
+import 'package:grassroots_dart_udx/src/packet.dart';
+import 'package:grassroots_dart_udx/grassroots_dart_udx.dart';
 import 'package:test/test.dart';
 
 void main() {
